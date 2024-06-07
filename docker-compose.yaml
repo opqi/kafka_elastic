@@ -1,0 +1,75 @@
+services:
+  zookeeper:
+    image: 'bitnami/zookeeper:3.9.2'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - '2181:2181'
+    volumes:
+      - 'zookeeper_data:/bitnami/zookeeper/data'
+      - 'zookeeper_logs:/bitnami/zookeeper/logs'
+
+  kafka:
+    image: 'bitnami/kafka:3.3.2'
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9093
+      - KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    ports:
+      - '9093:9093'
+    volumes:
+      - 'kafka_data:/bitnami/kafka/data'
+      - 'kafka_logs:/bitnami/kafka/logs'
+
+  kafka-connect:
+    image: 'confluentinc/cp-kafka-connect:7.6.1'
+    depends_on:
+      - kafka
+    environment:
+      - CONNECT_BOOTSTRAP_SERVERS=kafka:9093
+      - CONNECT_REST_PORT=8083
+      - CONNECT_GROUP_ID=connect-cluster
+      - CONNECT_CONFIG_STORAGE_TOPIC=connect-configs
+      - CONNECT_OFFSET_STORAGE_TOPIC=connect-offsets
+      - CONNECT_STATUS_STORAGE_TOPIC=connect-status
+      - CONNECT_KEY_CONVERTER=org.apache.kafka.connect.storage.StringConverter
+      - CONNECT_VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter
+      - CONNECT_PLUGIN_PATH=/usr/share/java
+      - CONNECT_REST_ADVERTISED_HOST_NAME=localhost
+    ports:
+      - '8083:8083'
+    volumes:
+      - './connect-distributed.properties:/etc/kafka-connect/connect-distributed.properties'
+      - 'connect_data:/var/lib/connect'
+      - '../connect-plugins:/usr/share/java'
+
+  elasticsearch:
+    image: 'elasticsearch:8.4.0'
+    environment:
+      - discovery.type=single-node
+    ports:
+      - '9400:9400'
+      - '9500:9500'
+    volumes:
+      - 'elasticsearch_data:/usr/share/elasticsearch/data'
+      - 'elasticsearch_logs:/usr/share/elasticsearch/logs'
+
+  kibana:
+    image: 'kibana:8.4.0'
+    depends_on:
+      - elasticsearch
+    ports:
+      - '5601:5601'
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+
+volumes:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:
+  kafka_logs:
+  connect_data:
+  elasticsearch_data:
+  elasticsearch_logs:
