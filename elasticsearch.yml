@@ -1,0 +1,16 @@
+cluster.name: "docker-cluster"
+network.host: 0.0.0.0
+
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: false
+
+xpack.security.authc:
+  anonymous:
+    username: "anonymous"
+    roles: "superuser"
+    authz_exception: true
+
+http:
+  cors:
+    enabled: true
+    allow-origin: "*"
